@@ -1,5 +1,5 @@
 class Book {
-  int rank;
+  int isbn; // dart int is 64-bit, not 32-bit, so this is okay
   String title;
   String author;
   String imageUrl;
@@ -7,7 +7,7 @@ class Book {
   String amazonLink;
 
   Book({
-    required this.rank,
+    required this.isbn,
     required this.title,
     required this.author,
     required this.imageUrl,
@@ -19,22 +19,54 @@ class Book {
   @override
   String toString() {
     return 'Book{'
-        '\n\trank: $rank, '
+        '\n\tisbn: $isbn, '
         '\n\ttitle: $title, '
         '\n\tauthor: $author, '
         '\n\timageUrl: $imageUrl, '
         '\n\tdescription: $description, '
-        '\n\tamazonLink: $amazonLink}';
+        '\n\tamazonLink: $amazonLink}\n';
+  }
+
+  factory Book.fromDBResult(Map<String, dynamic> result) {
+    return Book(
+      isbn: result["isbn"] as int,
+      title: result["title"] as String,
+      author: result["author"] as String,
+      imageUrl: result["imageUrl"] as String,
+      description: result["description"] as String,
+      amazonLink: result["amazonLink"] as String,
+    );
   }
 
   factory Book.fromJson(Map<String, dynamic> json) {
-      return Book(
-        rank: json["rank"] as int,
-        title: json["title"] as String,
-        author: json["author"] as String,
-        imageUrl: json["book_image"] as String,
-        description: json["description"] as String,
-        amazonLink: json["amazon_product_url"] as String,
-      );
-    }
+    return Book(
+      isbn: int.parse(json["primary_isbn13"] as String),
+      title: json["title"] as String,
+      author: json["author"] as String,
+      imageUrl: json["book_image"] as String,
+      description: json["description"] as String,
+      amazonLink: json["amazon_product_url"] as String,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      "isbn": isbn,
+      "title": title,
+      "author": author,
+      "imageUrl": imageUrl,
+      "description": description,
+      "amazonLink": amazonLink,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return (other is Book) && other.isbn == isbn;
+  }
+
+  @override
+  // Beware that BigInt toInt "clamps" the max
+  int get hashCode => isbn;
+
 }
