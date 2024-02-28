@@ -1,4 +1,4 @@
-enum NYTimesList {
+enum BestSellerCategories {
   combinedFiction(
     encodedName: "combined-print-and-e-book-fiction",
     displayName: "Combined - Fiction",
@@ -24,7 +24,7 @@ enum NYTimesList {
     displayName: "Paperback - Non-Fiction",
   );
 
-  const NYTimesList({
+  const BestSellerCategories({
     required this.encodedName,
     required this.displayName,
   });

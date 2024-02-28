@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nytimes_bestsellers/data/book_database.dart';
-import 'package:nytimes_bestsellers/data/ny_times_lists.dart';
+import 'package:nytimes_bestsellers/data/bestseller_categories.dart';
 import 'package:nytimes_bestsellers/data/ny_times_reader.dart';
 import 'package:nytimes_bestsellers/data/book.dart';
 
@@ -38,9 +38,9 @@ enum CurrentPageState { listView, savedView }
 
 class _MyHomePageState extends State<MyHomePage> {
   var dateController = TextEditingController();
-  final reader = NYTimesReader();
+  final reader = NYTimesBestSellersReader();
   var homePageState = CurrentPageState.listView;
-  var bookListSelection = NYTimesList.combinedFiction;
+  var bestsellerCategory = BestSellerCategories.combinedFiction;
 
   final bookDb = BookDatabase();
 
@@ -97,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             )
         )
-      ],
+      ], // actions
     );
   }
 
@@ -114,17 +114,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget listSelector(BuildContext context) {
-    return DropdownButton<NYTimesList>(
-        value: bookListSelection,
-        onChanged: (NYTimesList? newValue) {
+    return DropdownButton<BestSellerCategories>(
+        value: bestsellerCategory,
+        onChanged: (BestSellerCategories? newValue) {
           setState(() {
             if (newValue != null) {
-              bookListSelection = newValue;
-              bestSellerBooks = reader.getBooks(list: bookListSelection);
+              bestsellerCategory = newValue;
+              bestSellerBooks = reader.getBooks(list: bestsellerCategory);
             }
           });
         },
-        items: NYTimesList.values
+        items: BestSellerCategories.values
             .map((listCategory) =>
                 DropdownMenuItem(
                     value: listCategory,
@@ -206,7 +206,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   "by ${book.author}",
                   style: const TextStyle(fontStyle: FontStyle.italic),
                 ),
-              ],
+              ], // children
             )
         ),
         Expanded(

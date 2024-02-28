@@ -1,15 +1,14 @@
 import 'package:http/http.dart' as http;
 import 'package:nytimes_bestsellers/data/book.dart';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
-import 'package:nytimes_bestsellers/data/ny_times_lists.dart';
+import 'package:nytimes_bestsellers/data/bestseller_categories.dart';
 
 const apiKey = String.fromEnvironment("NY_TIMES_KEY");
 
-class NYTimesReader {
+class NYTimesBestSellersReader {
   Future<List<Book>> getBooks(
-      {NYTimesList list = NYTimesList.combinedFiction}
+      {BestSellerCategories list = BestSellerCategories.combinedFiction}
   ) async {
     final response = await http.get(
         Uri.parse(

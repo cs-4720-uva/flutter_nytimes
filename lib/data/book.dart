@@ -66,7 +66,6 @@ class Book {
   }
 
   @override
-  // Beware that BigInt toInt "clamps" the max
   int get hashCode => isbn;
 
 }
