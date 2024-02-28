@@ -1,25 +1,25 @@
 enum NYTimesList {
-  COMBINED_FICTION(
+  combinedFiction(
     encodedName: "combined-print-and-e-book-fiction",
     displayName: "Combined - Fiction",
   ),
-  COMBINED_NON_FICTION(
+  combinedNonFiction(
     encodedName: "combined-print-and-e-book-nonfiction",
     displayName: "Combined - Non-Fiction",
   ),
-  HARDCOVER_FICTION(
+  hardcoverFiction(
     encodedName: "hardcover-fiction",
     displayName: "Hardcover - Fiction",
   ),
-  HARDCOVER_NONFICTION(
+  hardcoverNonFiction(
     encodedName: "hardcover-nonfiction",
     displayName: "Hardcover - Non-Fiction",
   ),
-  PAPERBACK_FICTION(
+  paperbackFiction(
     encodedName: "trade-fiction-paperback",
     displayName: "Paperback - Fiction",
   ),
-  PAPERBACK_NONFICTION(
+  paperbackNonFiction(
     encodedName: "paperback-nonfiction",
     displayName: "Paperback - Non-Fiction",
   );

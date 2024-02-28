@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nytimes_bestsellers/data/book_database.dart';
@@ -35,13 +34,13 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-enum CurrentPageState { LIST_VIEW, SAVED_VIEW }
+enum CurrentPageState { listView, savedView }
 
 class _MyHomePageState extends State<MyHomePage> {
   var dateController = TextEditingController();
   final reader = NYTimesReader();
-  var homePageState = CurrentPageState.LIST_VIEW;
-  var bookListSelection = NYTimesList.COMBINED_FICTION;
+  var homePageState = CurrentPageState.listView;
+  var bookListSelection = NYTimesList.combinedFiction;
 
   final bookDb = BookDatabase();
 
@@ -59,10 +58,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _toggleView() {
-    if (homePageState == CurrentPageState.LIST_VIEW) {
-      homePageState = CurrentPageState.SAVED_VIEW;
+    if (homePageState == CurrentPageState.listView) {
+      homePageState = CurrentPageState.savedView;
     } else {
-      homePageState = CurrentPageState.LIST_VIEW;
+      homePageState = CurrentPageState.listView;
     }
   }
 
@@ -71,8 +70,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: buildAppBar(context),
       body: switch (homePageState) {
-        CurrentPageState.LIST_VIEW => listViewBody(context),
-        CurrentPageState.SAVED_VIEW => savedViewBody(context),
+        CurrentPageState.listView => listViewBody(context),
+        CurrentPageState.savedView => savedViewBody(context),
       },
     );
   }
@@ -83,7 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
       title: const Text("NY Times Best-Sellers"),
       actions: [
         Padding(
-            padding: EdgeInsets.only(right: 20.0),
+            padding: const EdgeInsets.only(right: 20.0),
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -91,12 +90,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 });
               },
               child: switch (homePageState) {
-                CurrentPageState.LIST_VIEW =>
+                CurrentPageState.listView =>
                   const Icon(Icons.star, size: 26.0),
-                CurrentPageState.SAVED_VIEW =>
+                CurrentPageState.savedView =>
                   const Icon(Icons.list, size: 26.0),
               },
-            ))
+            )
+        )
       ],
     );
   }
@@ -199,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${rank!}. ${book.title}",
+                  "$rank. ${book.title}",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
@@ -207,7 +207,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: const TextStyle(fontStyle: FontStyle.italic),
                 ),
               ],
-            )),
+            )
+        ),
         Expanded(
             flex: 24,
             child: ElevatedButton(
@@ -216,11 +217,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 setState(() {});
               },
               child: const Text("Save"),
-            )),
+            )
+        ),
         Expanded(
             flex: 30,
-            child: Image.network(book.imageUrl,
-                height: 100, fit: BoxFit.fitHeight))
+            child: Image.network(
+                book.imageUrl,
+                height: 100, fit: BoxFit.fitHeight
+            )
+        )
       ],
     );
   }

@@ -9,7 +9,7 @@ const apiKey = String.fromEnvironment("NY_TIMES_KEY");
 
 class NYTimesReader {
   Future<List<Book>> getBooks(
-      {NYTimesList list = NYTimesList.COMBINED_FICTION}
+      {NYTimesList list = NYTimesList.combinedFiction}
   ) async {
     final response = await http.get(
         Uri.parse(
