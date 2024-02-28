@@ -5,7 +5,6 @@ import 'package:nytimes_bestsellers/data/book_database.dart';
 import 'package:nytimes_bestsellers/data/ny_times_lists.dart';
 import 'package:nytimes_bestsellers/data/ny_times_reader.dart';
 import 'package:nytimes_bestsellers/data/book.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 Future main() async {
   runApp(const MyApp());
