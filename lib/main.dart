@@ -39,9 +39,9 @@ enum CurrentPageState { LIST_VIEW, SAVED_VIEW }
 
 class _MyHomePageState extends State<MyHomePage> {
   var dateController = TextEditingController();
-  var reader = NYTimesReader();
-  var currentPageState = CurrentPageState.LIST_VIEW;
-  var currentBookList = NYTimesList.COMBINED_FICTION;
+  final reader = NYTimesReader();
+  var homePageState = CurrentPageState.LIST_VIEW;
+  var bookListSelection = NYTimesList.COMBINED_FICTION;
 
   final bookDb = BookDatabase();
 
@@ -54,49 +54,50 @@ class _MyHomePageState extends State<MyHomePage> {
     bookDb.initDB();
   }
 
-  void _setDate() {
-    setState(() {});
+  void _setDate(String formattedDate) {
+    dateController.text = formattedDate;
   }
 
   void _toggleView() {
-    if (currentPageState == CurrentPageState.LIST_VIEW) {
-      currentPageState = CurrentPageState.SAVED_VIEW;
+    if (homePageState == CurrentPageState.LIST_VIEW) {
+      homePageState = CurrentPageState.SAVED_VIEW;
     } else {
-      currentPageState = CurrentPageState.LIST_VIEW;
+      homePageState = CurrentPageState.LIST_VIEW;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme
-            .of(context)
-            .colorScheme
-            .inversePrimary,
-        title: const Text("NY Times BestSellers"),
-        actions: [
-          Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _toggleView();
-                  });
-                },
-                child: switch (currentPageState) {
-                  CurrentPageState.LIST_VIEW =>
-                  const Icon(Icons.star, size: 26.0),
-                  CurrentPageState.SAVED_VIEW =>
-                  const Icon(Icons.list, size: 26.0),
-                },
-              ))
-        ],
-      ),
-      body: switch (currentPageState) {
+      appBar: buildAppBar(context),
+      body: switch (homePageState) {
         CurrentPageState.LIST_VIEW => listViewBody(context),
         CurrentPageState.SAVED_VIEW => savedViewBody(context),
       },
+    );
+  }
+
+  AppBar buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      title: const Text("NY Times Best-Sellers"),
+      actions: [
+        Padding(
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _toggleView();
+                });
+              },
+              child: switch (homePageState) {
+                CurrentPageState.LIST_VIEW =>
+                  const Icon(Icons.star, size: 26.0),
+                CurrentPageState.SAVED_VIEW =>
+                  const Icon(Icons.list, size: 26.0),
+              },
+            ))
+      ],
     );
   }
 
@@ -114,21 +115,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget listSelector(BuildContext context) {
     return DropdownButton<NYTimesList>(
-      value: currentBookList,
-      onChanged: (NYTimesList? newValue) {
-        setState(() {
-          if (newValue != null) {
-            currentBookList = newValue!;
-            bestSellerBooks = reader.getBooks(list: currentBookList);
-          }
-
-        });
-      }, items: NYTimesList.values.map((list) =>
-          DropdownMenuItem(
-            value: list,
-            child: Text(list.displayName))
-          ).toList()
-    );
+        value: bookListSelection,
+        onChanged: (NYTimesList? newValue) {
+          setState(() {
+            if (newValue != null) {
+              bookListSelection = newValue;
+              bestSellerBooks = reader.getBooks(list: bookListSelection);
+            }
+          });
+        },
+        items: NYTimesList.values
+            .map((listCategory) =>
+                DropdownMenuItem(
+                    value: listCategory,
+                    child: Text(listCategory.displayName)))
+            .toList());
   }
 
   Widget datePickerField(BuildContext context) {
@@ -142,15 +143,11 @@ class _MyHomePageState extends State<MyHomePage> {
               context: context,
               initialDate: DateTime.now(),
               firstDate: DateTime(2010),
-              lastDate: DateTime(DateTime
-                  .now()
-                  .year + 1));
-
+              lastDate: DateTime(DateTime.now().year + 1));
           if (pickedDate != null) {
             String formattedDate = DateFormat("MM-dd-yyyy").format(pickedDate);
-
             setState(() {
-              dateController.text = formattedDate;
+              _setDate(formattedDate);
             });
           }
         });
@@ -230,23 +227,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget savedViewBody(BuildContext context) {
     return Center(
-        child: Column(
-            children: <Widget>[
-              FutureBuilder(
-                future: bookDb.getAllBooks(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text("Error: ${snapshot.error}");
-                  } else {
-                    return savedListView(snapshot.data!);
-                  }
-                },
-              )
-            ]
-        )
-    );
+        child: Column(children: <Widget>[
+      FutureBuilder(
+        future: bookDb.getAllBooks(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            return Text("Error: ${snapshot.error}");
+          } else {
+            return savedListView(snapshot.data!);
+          }
+        },
+      )
+    ]));
   }
 
   Widget savedListView(List<Book> books) {
@@ -290,8 +284,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: const TextStyle(fontStyle: FontStyle.italic),
                 ),
               ],
-            )
-        ),
+            )),
         Expanded(
             flex: 28,
             child: ElevatedButton(
@@ -299,19 +292,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 await bookDb.deleteBook(book);
                 setState(() {});
               },
-              child: const Text("Remove", softWrap: false,),
-            )
-        ),
+              child: const Text(
+                "Remove",
+                softWrap: false,
+              ),
+            )),
         Expanded(
             flex: 30,
-            child: Image.network(
-                book.imageUrl,
-                height: 100,
-                fit: BoxFit.fitHeight
-            )
-        )
+            child: Image.network(book.imageUrl,
+                height: 100, fit: BoxFit.fitHeight))
       ],
     );
   }
-
 }
