@@ -4,6 +4,8 @@ import 'package:nytimes_bestsellers/data/book_database.dart';
 import 'package:nytimes_bestsellers/data/bestseller_categories.dart';
 import 'package:nytimes_bestsellers/data/ny_times_reader.dart';
 import 'package:nytimes_bestsellers/data/book.dart';
+import 'package:nytimes_bestsellers/info_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future main() async {
   runApp(const MyApp());
@@ -36,11 +38,17 @@ class MyHomePage extends StatefulWidget {
 
 enum CurrentPageState { listView, savedView }
 
+
+
+const _datePreferenceKey = "last_date";
+
 class _MyHomePageState extends State<MyHomePage> {
-  var dateController = TextEditingController();
-  final reader = NYTimesBestSellersReader();
-  var homePageState = CurrentPageState.listView;
-  var bestsellerCategory = BestSellerCategories.combinedFiction;
+
+  final _dateController = TextEditingController();
+  final _reader = NYTimesBestSellersReader();
+  var _homePageState = CurrentPageState.listView;
+  var _bestsellerCategory = BestSellerCategories.combinedFiction;
+  Book? _lastBookSelected;
 
   final bookDb = BookDatabase();
 
@@ -49,27 +57,64 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    bestSellerBooks = reader.getBooks();
+    bestSellerBooks = _reader.getBooks();
     bookDb.initDB();
+    _loadPreferences();
+  }
+  Future<void> _loadPreferences() async {
+    final preferences = await SharedPreferences.getInstance();
+    final storedFormattedDate = preferences.getString(_datePreferenceKey);
+    if (storedFormattedDate != null) {
+      setState(() {
+        _setDate(storedFormattedDate);
+      });
+    }
   }
 
   void _setDate(String formattedDate) {
-    dateController.text = formattedDate;
+    setState(() {
+      _dateController.text = formattedDate;
+    });
+    _saveFormattedDate(_dateController.text);
+  }
+
+
+
+  Future<void> _saveFormattedDate(String formattedDate) async{
+    final preferences = await SharedPreferences.getInstance();
+    preferences.setString(_datePreferenceKey, formattedDate);
   }
 
   void _toggleView() {
-    if (homePageState == CurrentPageState.listView) {
-      homePageState = CurrentPageState.savedView;
-    } else {
-      homePageState = CurrentPageState.listView;
-    }
+    setState(() {
+      if (_homePageState == CurrentPageState.listView) {
+        _homePageState = CurrentPageState.savedView;
+      } else {
+        _homePageState = CurrentPageState.listView;
+      }
+    });
+  }
+
+  void _changeList(BestSellerCategories? newValue) {
+    return setState(() {
+      if (newValue != null) {
+        _bestsellerCategory = newValue;
+        bestSellerBooks = _reader.getBooks(list: _bestsellerCategory);
+      }
+    });
+  }
+
+  void _setLastBookSelected(Book? book) {
+    setState(() {
+      _lastBookSelected = book;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildAppBar(context),
-      body: switch (homePageState) {
+      body: switch (_homePageState) {
         CurrentPageState.listView => listViewBody(context),
         CurrentPageState.savedView => savedViewBody(context),
       },
@@ -82,21 +127,15 @@ class _MyHomePageState extends State<MyHomePage> {
       title: const Text("NY Times Best-Sellers"),
       actions: [
         Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _toggleView();
-                });
-              },
-              child: switch (homePageState) {
-                CurrentPageState.listView =>
-                  const Icon(Icons.star, size: 26.0),
-                CurrentPageState.savedView =>
-                  const Icon(Icons.list, size: 26.0),
-              },
-            )
-        )
+          padding: const EdgeInsets.only(right: 20.0),
+          child: GestureDetector(
+            onTap: _toggleView,
+            child: switch (_homePageState) {
+              CurrentPageState.listView => const Icon(Icons.star, size: 26.0),
+              CurrentPageState.savedView =>
+                const Icon(Icons.list, size: 26.0),
+            },
+          ))
       ], // actions
     );
   }
@@ -115,26 +154,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget listSelector(BuildContext context) {
     return DropdownButton<BestSellerCategories>(
-        value: bestsellerCategory,
+        value: _bestsellerCategory,
         onChanged: (BestSellerCategories? newValue) {
-          setState(() {
-            if (newValue != null) {
-              bestsellerCategory = newValue;
-              bestSellerBooks = reader.getBooks(list: bestsellerCategory);
-            }
-          });
+          _changeList(newValue);
         },
         items: BestSellerCategories.values
-            .map((listCategory) =>
-                DropdownMenuItem(
-                    value: listCategory,
-                    child: Text(listCategory.displayName)))
+            .map((listCategory) => DropdownMenuItem(
+                value: listCategory,
+                child: Text(listCategory.displayName)
+            ))
             .toList());
   }
 
+
+
   Widget datePickerField(BuildContext context) {
     return TextField(
-        controller: dateController,
+        controller: _dateController,
         decoration: const InputDecoration(
             icon: Icon(Icons.calendar_today), labelText: "Select Date"),
         readOnly: true,
@@ -146,9 +182,7 @@ class _MyHomePageState extends State<MyHomePage> {
               lastDate: DateTime(DateTime.now().year + 1));
           if (pickedDate != null) {
             String formattedDate = DateFormat("MM-dd-yyyy").format(pickedDate);
-            setState(() {
-              _setDate(formattedDate);
-            });
+            _setDate(formattedDate);
           }
         });
   }
@@ -190,62 +224,51 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget bestSellerBookContainer(Book book, int rank) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-            flex: 46,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$rank. ${book.title}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  "by ${book.author}",
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ], // children
-            )
+    return Container(
+      color: (_lastBookSelected != null && _lastBookSelected == book) ?
+          Theme.of(context).colorScheme.primaryContainer :
+          Theme.of(context).colorScheme.background
+      ,
+      child: InkWell(
+        onTap: () { _setLastBookSelected(book); },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+                flex: 46,
+                child: bookTitleAndAuthor(book)),
+            Expanded(flex: 24,
+                child: Column(
+                  children: [
+                    infoButton(book),
+                    saveButton(book),
+                  ], // children
+                )
+            ),
+            Expanded(flex: 30, child: bookCoverImage(book))
+          ],
         ),
-        Expanded(
-            flex: 24,
-            child: ElevatedButton(
-              onPressed: () async {
-                await bookDb.insertBook(book);
-                setState(() {});
-              },
-              child: const Text("Save"),
-            )
-        ),
-        Expanded(
-            flex: 30,
-            child: Image.network(
-                book.imageUrl,
-                height: 100, fit: BoxFit.fitHeight
-            )
-        )
-      ],
+      ),
     );
   }
 
   Widget savedViewBody(BuildContext context) {
     return Center(
-        child: Column(children: <Widget>[
-      FutureBuilder(
-        future: bookDb.getAllBooks(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          } else if (snapshot.hasError) {
-            return Text("Error: ${snapshot.error}");
-          } else {
-            return savedListView(snapshot.data!);
-          }
-        },
-      )
-    ]));
+      child: Column(children: <Widget>[
+        FutureBuilder(
+          future: bookDb.getAllBooks(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text("Error: ${snapshot.error}");
+            } else {
+              return savedListView(snapshot.data!);
+            }
+          },
+        )
+      ])
+    );
   }
 
   Widget savedListView(List<Book> books) {
@@ -277,36 +300,79 @@ class _MyHomePageState extends State<MyHomePage> {
       children: [
         Expanded(
             flex: 42,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  book.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  "by ${book.author}",
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ],
-            )),
+            child: bookTitleAndAuthor(book)
+        ),
         Expanded(
             flex: 28,
-            child: ElevatedButton(
-              onPressed: () async {
-                await bookDb.deleteBook(book);
-                setState(() {});
-              },
-              child: const Text(
-                "Remove",
-                softWrap: false,
-              ),
-            )),
+            child: Column(
+              children: [
+                infoButton(book),
+                deleteButton(book)
+              ],
+            ),
+        ),
         Expanded(
             flex: 30,
-            child: Image.network(book.imageUrl,
-                height: 100, fit: BoxFit.fitHeight))
+            child: bookCoverImage(book))
       ],
     );
   }
+
+  ElevatedButton saveButton(Book book) {
+    return ElevatedButton(
+      onPressed: () async {
+        await bookDb.insertBook(book);
+        _setLastBookSelected(book);
+      },
+      child: const Text("Save"),
+    );
+  }
+
+  Widget infoButton(Book book) {
+    return ElevatedButton(
+      onPressed: ()  {
+        Navigator.of(context).push(
+          MaterialPageRoute( builder:
+              (context) => InfoPage(book)
+          ),
+        );  // Navigator
+        _setLastBookSelected(book);
+      },
+      child: const Text("Info"),
+    );
+  }
+
+  ElevatedButton deleteButton(Book book) {
+    return ElevatedButton(
+      onPressed: () async {
+        await bookDb.deleteBook(book);
+        _setLastBookSelected(null);
+      },
+      child: const Text(
+        "Remove",
+        softWrap: false,
+      ),
+    );
+  }
+}
+
+Widget bookCoverImage(Book book) {
+  return Image.network(
+      book.imageUrl,
+      height: 100, fit: BoxFit.fitHeight
+  );
+}
+
+Widget bookTitleAndAuthor(Book book) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(book.title,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      Text("by ${book.author}",
+        style: const TextStyle(fontStyle: FontStyle.italic),
+      ),
+    ], // children
+  );
 }
